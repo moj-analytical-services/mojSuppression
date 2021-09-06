@@ -1,13 +1,14 @@
-#' this is the simplified version of suppress_single_group
-#' the main aim is to remove some of the potentially superfluous features and streamline the suppression function and
-#' total argument list for users
-
-# function to apply both primary or secondary suppression across a selection of either rows, cols, or both
-# this should be used on standard dfs where data is already in its final form 
-# if your data is in a longer format (column headers are in a single column, for example), please see the function below
-
+#' Suppress an input dataframe
+#'
+#' @description
+#'
+#' This is the simplified version of suppress_single_group. The main aim is to remove some of the potentially 
+#' superfluous features and streamline the suppression function and reduce the total argument list for users.
+#' This fuction offers a way for users to suppression rows, columns and both rows and columns simultaneously.
+#'
+#' @details
 #' The `simple_suppression()` function can be used to apply both primary or 
-#' secondary suppression across a selection of either rows, cols, or both,
+#' secondary suppression across a selection of either rows, cols, or both simultaenously,
 #' suppressing all values below a specified suppression threshold.
 #' This funtion expects that the input be your final dataframe that you wish to suppress on.
 #' Please filter down your existing work, should it not meet this criteria.
