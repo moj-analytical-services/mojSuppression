@@ -6,7 +6,7 @@
 
 This package contains three main functions: `simple_suppression`, `suppress_single_group` (both for suppressing a single dataframe) and `suppress_tidy_data` (for suppressing on multiple dfs, bound together).
 
-Installation (as of Sept 2021):
+Installation:
 ```r
 remotes::install_github('moj-analytical-services/moj-suppression')
 ```
