@@ -35,6 +35,16 @@ test_df <- data.frame(bme = bme,
                       other = other,
                       test = test)
 
+# suppress only columns
+mojSuppression::simple_suppression(
+  df = test_df,
+  where_to_suppress = c('col', 'row'),
+  cols_to_suppress = c("bme", "white", "other", "test"), # you can leave this blank if you wish to suppress all cols
+  row_nos_to_suppress = 1:nrow(test_df), # you can leave this blank if you wish to supp all rows
+  suppression_thres = 2,
+  suppression_output_value = "~"
+)
+# suppress both rows and columns
 mojSuppression::simple_suppression(
   df = test_df,
   where_to_suppress = c('col', 'row'),
