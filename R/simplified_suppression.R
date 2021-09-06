@@ -188,7 +188,7 @@ simple_suppression <- function(
   }
   
   #set value to output where suppression has occurred (default is to leave it as is)
-  df_to_suppress <- df_to_suppress %>% 
+  df <- df %>% 
     dplyr::mutate_at(cols_to_suppress,
               ~ifelse(. == 9999999, suppression_output_value, .))
   
