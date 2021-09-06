@@ -2,14 +2,7 @@
 % Please edit documentation in R/simplified_suppression.R
 \name{simple_suppression}
 \alias{simple_suppression}
-\title{this is the simplified version of suppress_single_group
-the main aim is to remove some of the potentially superfluous features and streamline the suppression function and
-total argument list for users
-The `simple_suppression()` function can be used to apply both primary or 
-secondary suppression across a selection of either rows, cols, or both,
-suppressing all values below a specified suppression threshold.
-This funtion expects that the input be your final dataframe that you wish to suppress on.
-Please filter down your existing work, should it not meet this criteria.}
+\title{Suppress an input dataframe}
 \usage{
 simple_suppression(
   df,
@@ -48,6 +41,17 @@ while working with your data in R, as setting the output to `~` will set your co
 \item{secondary_suppress_0}{Specify whether 0 can be used for secondary suppression or not. If TRUE, 0s will be suppressed when secondary suppression is performed}
 }
 \description{
+This is the simplified version of suppress_single_group. The main aim is to remove some of the potentially 
+superfluous features and streamline the suppression function and reduce the total argument list for users.
+This fuction offers a way for users to suppression rows, columns and both rows and columns simultaneously.
+}
+\details{
+The `simple_suppression()` function can be used to apply both primary or 
+secondary suppression across a selection of either rows, cols, or both simultaenously,
+suppressing all values below a specified suppression threshold.
+This funtion expects that the input be your final dataframe that you wish to suppress on.
+Please filter down your existing work, should it not meet this criteria.
+
 The `simple_suppression()` function applies suppression to either rows, columns or both.
 This is the simplified version of suppress_single_group.
 The main aim is to remove some of the potentially superfluous features and streamline argument list for users
