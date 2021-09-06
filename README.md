@@ -8,7 +8,8 @@ This package contains three main functions: `simple_suppression`, `suppress_sing
 
 Installation:
 ```r
-remotes::install_github('moj-analytical-services/mojSuppression')
+# install.packages('devtools') # run if you don't have devtools installed
+devtools::install_github('moj-analytical-services/mojSuppression')
 ```
 
 If there are features you'd like implemented or if any bugs are found, please submit an `Issue`.
