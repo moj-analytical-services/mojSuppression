@@ -4,18 +4,17 @@
 #'
 #' This is the simplified version of suppress_single_group. The main aim is to remove some of the potentially 
 #' superfluous features and streamline the suppression function and reduce the total argument list for users.
-#' This fuction offers a way for users to suppression rows, columns and both rows and columns simultaneously.
+#' This fuction offers a way for users to suppression rows, columns or both rows and columns simultaneously.
 #'
 #' @details
 #' The `simple_suppression()` function can be used to apply both primary or 
-#' secondary suppression across a selection of either rows, cols, or both simultaenously,
+#' secondary suppression across a selection of either rows, columns or both simultaneously,
 #' suppressing all values below a specified suppression threshold.
 #' This funtion expects that the input be your final dataframe that you wish to suppress on.
 #' Please filter down your existing work, should it not meet this criteria.
 #' 
-#' The `simple_suppression()` function applies suppression to either rows, columns or both.
 #' This is the simplified version of suppress_single_group.
-#' The main aim is to remove some of the potentially superfluous features and streamline argument list for users
+#' The main aim is to remove some of the potentially superfluous features and streamline the argument list for users.
 #' If you need any of the following rules, please see the `suppress_single_group()` function instead:
 #' * total suppression - i.e. where total suppression nodes sum to <= suppression threshold and more suppression is necessary
 #' * priority suppression - where you want certain rows to take precedence for your secondary suppression
