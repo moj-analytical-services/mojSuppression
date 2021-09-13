@@ -1,3 +1,39 @@
+#' Suppress an input dataframe (with some additional options)
+#'
+#' @description
+#'
+#' This fuction offers a way for users to suppression rows, columns or both rows and columns simultaneously.
+#' For a more streamlined version (without some features, but easier to use), please see `simple_suppression`.
+#'
+#' @details
+#' The `suppress_single_group()` function can be used to apply both primary or 
+#' secondary suppression across a selection of either rows or columns,
+#' suppressing all values below a specified suppression threshold.
+#' This funtion expects that the input be your final dataframe that you wish to suppress on.
+#' Please filter down your existing work, should it not meet this criteria.
+#' 
+#' The `suppress_single_group()` function offers more functionality than the alternative, `simple_suppression`, at the
+#' cost of being slightly less intuitive and more daunting for new users.
+#' If you need any of the following rules, please use this function, otherwise you may be better served by the `simple_suppression` function:
+#' * total suppression - i.e. where total suppression nodes sum to <= suppression threshold and more suppression is necessary
+#' * priority suppression - where you want certain rows to take precedence for your secondary suppression
+#' * pseudo suppression - where you have columns you don't want to be actively suppressed, but if their values fall below your suppression threshold other columns need suppression
+#' 
+#' @param df Specify dataframe to suppress on
+#' @param where_to_suppress Which orientation you'd like to suppress on. For both row and column suppression, please use: c("row", "col")
+#' @param cols_to_suppress Columns to suppress on. These should be presented in the following format: `c("col1", "col2", ...)`
+#' If no value is entered, all columns will automatically be selected for suppression. 
+#' If a non-numeric column is selected, the code will forcefully stop the process
+#' @param row_nos_to_suppress Rows to be suppressed along. These should be numeric values: `c(1:3)`, for example.
+#' If no value is entered, all rows will be automatically selected for suppression.
+#' @param suppression_thres This is your threshold value to determine which values should be suppressed. 
+#' Values equal to, or below this value will be suppressed.
+#' @param suppress_0 Whether to suppress 0s or not. TRUE is the default and will suppress all 0s
+#' @param inc_secondary_suppression Flag to select whether only primary or secondary suppression is applied. Secondary suppression is the default.
+#' @param suppression_output_value Set a value to output where suppression has occurred. It is advised you set this to a numeric value (or leave at the default)
+#' while working with your data in R, as setting the output to `~` will set your column to a character class.
+#' @param secondary_suppress_0 Specify whether 0 can be used for secondary suppression or not. If TRUE, 0s will be suppressed when secondary suppression is performed
+#' 
 #' @include utils.R
 #' @include primary_suppression.R
 #' @include basic_secondary_suppression.R
@@ -5,13 +41,38 @@
 #' @include priority_suppression.R
 #' @include pseudo_suppression.R
 #' @include total_suppressors.R
+#' 
+#' 
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+#' @examples
+#' # Create our test df
+#' bme <- c(25, 1, 1, 10)
+#' white <- c(10, 6, 10, 1)
+#' other <- c(1, 5, 10, 10)
+#' test <- c(5, 6, 4, 3)
+#' 
+#' df <- data.frame(bme = bme,
+#'                  white = white,
+#'                  other = other,
+#'                  test = test)
+#' 
+#' # simple example for suppressing across all rows and columns
+#' mojSuppression::suppress_single_group(
+#'     df = df,
+#'     where_to_suppress = c('col', 'row'),
+#'     suppression_thres = 2
+#' )
+#' 
+
 
 
 
 # function to apply both primary or secondary suppression across a selection of either rows, cols, or both
 # this should be used on standard dfs where data is already in its final form 
 # if your data is in a longer format (column headers are in a single column, for example), please see the function below
-suppress_single_group <- function(
+apply_suppression_to_df <- function(
   df, # specify dataframe to suppress on
   where_to_suppress = c("col"), # which orientation to suppress on. For both row and column supp: c("row", "col")
   cols_to_suppress = NULL, # columns to suppress on. These should be presented like so: c("col1", "col2", ...)

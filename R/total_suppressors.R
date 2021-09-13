@@ -33,7 +33,7 @@ suppress_col_total_below_supp_thres <- function(
   # find our suppression totals by column
   # i.e. find the total value for each value suppressed in a given column
   suppression_total_list <- unique(suppression_index[,2]) %>% 
-    purrr::map_df(~tibble(total = sum(unsuppressed_df[as.data.frame(suppression_index) %>% 
+    purrr::map_df(~dplyr::tibble(total = sum(unsuppressed_df[as.data.frame(suppression_index) %>% 
                                                         dplyr::filter(col == .x) %>% 
                                                         dplyr::pull(row), .x] %>% 
                                         unlist(), na.rm = TRUE),
@@ -78,6 +78,26 @@ suppress_col_total_below_supp_thres <- function(
     
   }
   
+  # check whether we can use priority suppression here
+  # if all of our active rows have 0s and the user has specified that they don't want 0 suppression
+  # allow all rows to be suppressed
+  if(!is.null(priority_rows_to_suppress) & !secondary_suppress_0 & nrow(suppression_total_list)>0) {
+    cols_to_use <- suppression_total_list[['col']]
+    # filter our data for only row/col combinations with potential 0s
+    dummy_df <- suppressed_df[priority_rows_to_suppress, cols_to_use] %>% 
+      dplyr::filter_all(~.x != 9999999)
+    # check if any rows have less than 50% of cells occupied by 0s
+    perc_0 <- 1:nrow(dummy_df) %>% 
+      purrr::map_dbl(
+        ~sum(unlist(dummy_df[.x,]) == 3333333)/length(cols_to_use)
+      )
+    # check if we want to remove our priority supp
+    if(all(perc_0 >= 0.5)) {
+      priority_rows_to_suppress <- NULL
+    }
+    
+  }
+  
   # if we are applying priority suppression, trim our matrix down and create our row_index
   if(!is.null(priority_rows_to_suppress)) {
     suppressed_matrix <- as.matrix(suppressed_df[priority_rows_to_suppress,])
@@ -86,6 +106,7 @@ suppress_col_total_below_supp_thres <- function(
     suppressed_matrix <- as.matrix(suppressed_df)
     row_index <- 1:nrow(suppressed_df)
   }
+  
   
   if(running_total_supp & nrow(min_suppression_total_list)==1) {
     supp_col <- min_suppression_total_list[['col']]
@@ -204,7 +225,7 @@ suppress_row_total_below_supp_thres <- function(
 ) {
   
   # create our transposed dfs
-  transposed_df <- dplyr:: as_tibble(t(df_to_suppress))
+  transposed_df <- dplyr::as_tibble(t(df_to_suppress))
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   if(subset_df_along_row_and_col_arguments) {
@@ -216,7 +237,7 @@ suppress_row_total_below_supp_thres <- function(
     }
   }
   # transpose our unsuppressed df
-  transposed_unsupp_df <- dplyr:: as_tibble(t(unsuppressed_df))
+  transposed_unsupp_df <- dplyr::as_tibble(t(unsuppressed_df))
   
   # apply column suppression to "rows"
   transposed_df <- suppress_col_total_below_supp_thres(
@@ -233,7 +254,7 @@ suppress_row_total_below_supp_thres <- function(
   
   # convert back to our original form
   column_names_df_to_supp <- colnames(df_to_suppress)
-  df_to_suppress <- dplyr:: as_tibble(t(transposed_df))
+  df_to_suppress <- dplyr::as_tibble(t(transposed_df))
   # reset colnames
   colnames(df_to_suppress) <- column_names_df_to_supp
   
