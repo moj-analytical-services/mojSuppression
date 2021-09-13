@@ -73,7 +73,7 @@ simple_suppression <- function(
   cols_to_suppress = NULL,
   row_nos_to_suppress = NULL,
   suppression_thres,
-  suppress_0 = TRUE, 
+  suppress_0 = FALSE, 
   inc_secondary_suppression = TRUE,
   suppression_output_value = 9999999,
   secondary_suppress_0 = TRUE
