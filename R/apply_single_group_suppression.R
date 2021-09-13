@@ -81,7 +81,7 @@ apply_suppression_to_df <- function(
   #If you want to suppress all rows, simply run from 1:length(df)
   # leave this blank if you're only suppressing on cols
   suppression_thres, # this is the threshold for suppression. Values equal to or below this value will be suppressed
-  suppress_0 = TRUE, # whether to suppress 0s or not. TRUE is the default and will suppress all 0s
+  suppress_0 = FALSE, # whether to suppress 0s or not. TRUE is the default and will suppress all 0s
   inc_secondary_suppression = TRUE, # flag to select whether primary or secondary suppression is applied. Secondary supp is the default.
   suppression_output_value = 9999999, #set a value to output where suppression has occurred
   subset_df_along_row_and_col_arguments = TRUE, # TRUE by default. This essentially states that you want your "cols_to_suppress" and "row_nos_to_suppress" to be the only combinations suppressed
