@@ -8,7 +8,7 @@ This package contains three main functions: `simple_suppression`, `suppress_sing
 
 Installation:
 ```r
-# install.packages('devtools') # run if you don't have devtools installed
+if(!"devtools" %in% installed.packages()[, "devtools"]) install.packages("devtools")  # run if you don't have devtools installed
 devtools::install_github('moj-analytical-services/mojSuppression')
 ```
 
