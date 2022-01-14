@@ -164,8 +164,14 @@ run_secondary_suppression_across_cross_checked_df <- function(df,
                                                               ordered_priority_suppression = FALSE # set to TRUE if you'd like your priority suppression to follow the hierachy established in either the priority_row_suppression or priority_col_suppression arguments
                                                               # (i.e. for row priority, entering c(7, 2) will mean that row 7 is suppressed first and then row 2 is used if 7 was already suppressed)
 ) {
+  # The primary purpose of this function is to pull out minimum pairs for us to trial suppression solutions on
+  # The more potential solutions we generate, the more likely our final result is to be correct, so iterating
+  # over more DFs is arguably desirable in this scenario
+  
   # find cols requiring secondary suppression
   cols_requiring_suppression <- columns_to_supp[columns_to_supp %>% purrr::map_lgl(~sum(df[[.x]] == 9999999) == 1)]
+  # pulls out our rows we wish to check with our flexible suppression
+  suppd_rows <- which(1:nrow(df) %>% purrr::map_lgl(~sum(unlist(df[.x,]) == 9999999) > 0))
   
   if(length(cols_requiring_suppression) > 1) {
     # IF WE'VE SKIPPED THE WHILE STEP ABOVE (due to the if statement not being met) - run everything below...
@@ -205,8 +211,12 @@ run_secondary_suppression_across_cross_checked_df <- function(df,
         }
       }
     }
-    suppression_cols_with_min_value <- which(cross_df_matrix == min(cross_df_matrix), arr.ind=TRUE)[,2] %>%
-      unique()
+    
+    # quick bit of code to generate our final solution
+    create_solution <- function(df, final_row_to_supp, final_col_to_supp, values) {
+      df[final_row_to_supp, final_col_to_supp] <- values
+      return(df)
+    }
     
     # we shouldn't have any values where len(cols_requiring_supp)==1, so just check for whether the value is odd or even
     # if even, ony look for a min-value pair of length 2
@@ -218,19 +228,39 @@ run_secondary_suppression_across_cross_checked_df <- function(df,
                                            value_pair_len = value_pair_len)
     # following that, find our co-ords for our min value pair
     final_cols_to_supp <- names(sort(cross_df_matrix[as.numeric(names(min_value_pairs)),]) %>% 
-                                  utils::head(value_pair_len))
+                                  head(value_pair_len))
     final_row_to_supp <- as.numeric(names(min_value_pairs))
     if(!is.null(priority_row_suppression)) { # if not null, use our final_row value to guide where our suppression should occur in our priority rows
       final_row_to_supp <- priority_row_suppression[final_row_to_supp]
     }
     
-    # suppress the rows/cols found above. This is done using a "min-value pairs" approach (i.e. take a look at minimum value pairings across rows and pick the pairs that grant the lowest total collectively)
-    # this helps to improve our suppression selection
-    df[final_row_to_supp, final_cols_to_supp] <- 9999999
+    # create our min value solution...
+    min_value_pair_solution <- create_solution(df, final_row_to_supp, final_cols_to_supp, 9999999)
+    
+    # now, check our flexible pair solution and evaluate output that as a potential solution too...
+    if(length(suppd_rows)>1) {
+      suppd_cross_df <- cross_df_matrix[suppd_rows,]
+      f <- find_flexible_min_value_pair(matrix = suppd_cross_df)
+      
+      final_row_to_supp <- c(suppd_rows[f[1,1]], suppd_rows[f[2,1]]) # row indices
+      final_cols_to_supp <- c(colnames(cross_df_matrix)[f[1,2]], colnames(cross_df_matrix)[f[2,2]]) # col indices
+      # loop around both solutions and suppress...
+      flexible_min_pair <- df
+      for(i in 1:length(final_row_to_supp)) flexible_min_pair <- create_solution(flexible_min_pair, final_row_to_supp[i], final_cols_to_supp[i], 9999999)
+      
+    } else {
+      flexible_min_pair <- min_value_pair_solution
+    }
+    
+    # create a list with our two min value solutions
+    min_values_list <- list(
+      min_val_pair = min_value_pair_solution,
+      flexible_min_pair = flexible_min_pair
+    )
     
   }
   
-  return(df)
+  return(unique(min_values_list))
 }
 
 apply_cross_reference_suppression_cols <- function(supp_list, 
@@ -257,11 +287,18 @@ apply_cross_reference_suppression_cols <- function(supp_list,
     loop_counter <- loop_counter+1
     if(loop_counter > 1000) {stop("Infinite loop detected. Please review the underlying cross checker code before continuing.")}
     
-    supp_list[[1]] <- run_secondary_suppression_across_cross_checked_df(supp_list[[1]], 
-                                                                        columns_to_supp,
-                                                                        priority_row_suppression,
-                                                                        ordered_priority_suppression
+    out_list <- run_secondary_suppression_across_cross_checked_df(supp_list[[1]], 
+                                                                  columns_to_supp,
+                                                                  priority_row_suppression,
+                                                                  ordered_priority_suppression
     ) # run code to apply secondary suppression to lowest col
+    supp_list[[1]] <- out_list[[1]]
+    out_list <- out_list[-1]
+    if(length(out_list)>0) {
+      for(i in length(out_list)) {
+        supp_list[[length(supp_list)+1]] <- out_list[[i]]
+      }
+    }
     supp_list <- apply_cross_reference_suppression_to_cols(supp_list, columns_to_supp) # reapply our cross reference methodology
     # recalculate outstanding columns requiring suppression
     cols_requiring_suppression <- columns_to_supp[columns_to_supp %>% purrr::map_lgl(~sum(supp_list[[1]][[.x]] == 9999999) == 1)]
@@ -461,29 +498,45 @@ apply_final_cross_suppression <- function(supp_list,
 }
 
 
-apply_cross_referenced_suppression <- function(df,
+apply_cross_referenced_suppression <- function(supp_df_list,
                                                columns_to_suppress,
                                                priority_row_suppression = NULL, # specify a row number to allow it make it the priority for secondary suppression. The designated row does not need to fall in your main suppression area 
                                                # (not within cols_to_suppress and rows_to_suppress). Please only enter a single value for this. This is considered secondary suppression for argument purposes.
                                                ordered_priority_suppression = FALSE, # set to TRUE if you'd like your priority suppression to follow the hierachy established in either the priority_row_suppression or priority_col_suppression arguments
                                                # (i.e. for row priority, entering c(7, 2) will mean that row 7 is suppressed first and then row 2 is used if 7 was already suppressed)
-                                               secondary_suppress_0 = TRUE
+                                               secondary_suppress_0 = TRUE,
+                                               # arguments needed for total suppression
+                                               total_suppression = FALSE,
+                                               indirect_suppression = FALSE,
+                                               unsuppressed_df = NULL,
+                                               suppression_thres,
+                                               rows_nos_to_suppress
 ){
+  # convert our df to a list, if it isn't already in that format
+  if(!is_list(supp_df_list)) {
+    supp_df_list <- list(supp_df_list)
+  }
   
   # replace 0s if we don't want to secondary suppress on them
   if(!secondary_suppress_0) {
-    df[df == 0] <- 3333333
+    supp_df_list <- supp_df_list %>% 
+      purrr::map(
+        ~{
+          .x[.x == 0] <- 33333333
+          .x
+        }
+      )
   }
   
-  # create a list for us to use for a while loop
-  # as we run the code, new items will be added to the list as 'suppression branches'
-  # these branches are simply instances where multiple decisions on what to suppress can be made
+  # The next bit of code uses our supp_df_list (suppressed input list - this is either a single df, or multiple, depending on previous steps)
+  # As we run the code, new items will be added to the list as 'suppression branches' (see code below)
+  # These branches are simply instances where multiple decisions on what to suppress can be made (i.e. we have three 3s we can in theory suppress)
+  # but it's not initially obvious which to suppress. If you do suppress manually, you'll come across plenty of examples where you have to take a minute
+  # to think about what the correct suppression step would be. This code "thinks" by branching and evaluating multiple possible solutions simultaenously,
+  # allowing us to check all of these solutions and find the winner.
   
   # to simplify the alogrithm (at the cost of performance), run suppression checks across lots all paths we find, and evaluate to find the
   # best suppression selection available to us
-  supp_df_list <- list(
-    df
-  )
   suppressed_list <- list()
   suppressed_sum <- c()
   initialise <- TRUE
@@ -492,22 +545,64 @@ apply_cross_referenced_suppression <- function(df,
   loop_iteration <- 0
   while(length(supp_df_list) > 0) {
     if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
-    # we will need a while loop here
-    # join all of our cross reference functions and create our final output
-    supp_df_list <- apply_cross_reference_suppression_cols(supp_df_list, 
-                                                           columns_to_suppress,
-                                                           priority_row_suppression,
-                                                           ordered_priority_suppression
-    ) %>%
-      apply_cross_reference_suppression_to_rows(., columns_to_suppress)
     
-    # finally, check if there is any additional suppression required
-    supp_df_list <- apply_final_cross_suppression(supp_df_list, 
-                                                  columns_to_suppress,
-                                                  priority_row_suppression,
-                                                  ordered_priority_suppression,
-                                                  secondary_suppress_0 = secondary_suppress_0
-    )
+    # create a quick function to apply all of our suppression functions...
+    apply_suppression <- function(supp_df_list) {
+      # we will need a while loop here
+      # join all of our cross reference functions and create our final output
+      supp_df_list <- apply_cross_reference_suppression_cols(supp_df_list, 
+                                                             columns_to_suppress,
+                                                             priority_row_suppression,
+                                                             ordered_priority_suppression
+      ) %>%
+        apply_cross_reference_suppression_to_rows(., columns_to_suppress)
+      
+      # finally, check if there is any additional suppression required
+      supp_df_list <- apply_final_cross_suppression(supp_df_list, 
+                                                    columns_to_suppress,
+                                                    priority_row_suppression,
+                                                    ordered_priority_suppression,
+                                                    secondary_suppress_0 = secondary_suppress_0
+      )
+      return(supp_df_list)
+    }
+    
+    # apply suppression
+    supp_df_list <- apply_suppression(supp_df_list)
+    
+    # if we are suppressing on our column totals, apply our total suppression!
+    if(total_suppression | indirect_suppression) {
+      # check only our current df and suppress totals if necessary
+      supp_df_list[[1]] <- suppress_col_total_below_supp_thres(
+        supp_df_list[[1]],
+        unsuppressed_df,
+        suppression_thres,
+        cols_to_suppress = columns_to_suppress, # set cols to suppress on
+        rows_to_suppress = rows_nos_to_suppress, # set rows to suppress on
+        TRUE,
+        priority_rows_to_suppress = priority_row_suppression,
+        secondary_suppress_0 = secondary_suppress_0,
+        run_from_cross_ref = TRUE,
+        total_suppression = total_suppression,
+        indirect_suppression = indirect_suppression
+      )[[1]]
+      # %>% 
+      # # apply row total suppression
+      # suppress_row_total_below_supp_thres(
+      #   .,
+      #   unsuppressed_df,
+      #   suppression_threshold = suppression_thres,
+      #   cols_to_suppress = columns_to_suppress, # set cols to suppress on
+      #   rows_to_suppress = rows_nos_to_suppress, # set rows to suppress on
+      #   TRUE,
+      #   secondary_suppress_0 = secondary_suppress_0
+      # )
+      
+      # apply suppression again (following total being suppressed...)
+      supp_df_list <- apply_suppression(supp_df_list)
+    }
+    # remove any duplicates we've picked up
+    supp_df_list <- unique(supp_df_list)
     
     # add df to our suppressed list
     suppressed_list[[length(suppressed_list)+1]] <- list(
@@ -527,7 +622,7 @@ apply_cross_referenced_suppression <- function(df,
   
   # replace 0s if we don't want to secondary suppress on them
   if(!secondary_suppress_0) {
-    df[df == 3333333] <- 0
+    df[df == 33333333] <- 0
   }
   
   return(df)
