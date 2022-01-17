@@ -44,6 +44,7 @@
 #' 
 #' 
 #' @importFrom magrittr "%>%"
+#' @importFrom utils "head"
 #' 
 #' @export
 #' @examples
@@ -313,12 +314,15 @@ suppress_single_group <- function(
     }
   }
   
+  # unlist if required
+  if(is_list(df_to_suppress)) df_to_suppress <- df_to_suppress[[1]]
+  
   # bind our subset values back onto the original (if required)
   if(subset_df_along_row_and_col_arguments) {
     # subset our df accordingly
     df[row_nos_to_suppress,cols_to_suppress] <- df_to_suppress
   }
-  
+    
   #set value to output where suppression has occurred (default is to leave it as is)
   df <- df %>% 
     dplyr::mutate_at(cols_to_suppress,

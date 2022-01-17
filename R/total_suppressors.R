@@ -53,7 +53,7 @@ duplicated_supp_nodes <- function(suppression_index, unsuppressed_df, suppressio
     # extract the rows to check
     row_index <- suppression_index[,1][suppression_index[,2] == c]
     # pull out the corresponding suppressed values
-    col_values <- unsuppressed_df[row_index,] %>% pull({{c}})
+    col_values <- unsuppressed_df[row_index,] %>% dplyr::pull({{c}})
     # check if all values in the cols are either 1s or our suppression threshold value
     suppression_checker <- dplyr::bind_rows(
       suppression_checker,

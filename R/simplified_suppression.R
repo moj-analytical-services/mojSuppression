@@ -45,6 +45,7 @@
 #' 
 #' 
 #' @importFrom magrittr "%>%"
+#' @importFrom utils "head"
 #' 
 #' @export
 #' @examples
@@ -180,6 +181,9 @@ simple_suppression <- function(
                                                          ordered_priority_suppression = ordered_priority_suppression,
                                                          secondary_suppress_0 = secondary_suppress_0)
   }
+  
+  # unlist if required
+  if(is_list(df_to_suppress)) df_to_suppress <- df_to_suppress[[1]]
   
   # bind our subset values back onto the original (if required)
   if(subset_df_along_row_and_col_arguments) {
