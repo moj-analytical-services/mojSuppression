@@ -8,7 +8,7 @@
 # where requires suppression and to find the best home for our required secondary suppression.
 
 # Consider the following example of row/column suppression (you can imagine there are totals attached if that helps):
-# (random_df <- tibble(a=c(55, 66, 77, "~"), b = c(11, 4, 55, 4), c = c(11, "~", 4, 60), d = c(4, 66, 77, 100), e = c(77, 32, 77, "~")))
+# (random_df <- dplyr::tibble(a=c(55, 66, 77, "~"), b = c(11, 4, 55, 4), c = c(11, "~", 4, 60), d = c(4, 66, 77, 100), e = c(77, 32, 77, "~")))
 # Here, we have 5 columns, with three pieces of suppression already in place.
 # The code will see that in column "a" we have suppression on row 4, col "c" it's in row 2 and col "e" it's in row 4.
 # With this, it will look to place suppression nodes on [a, 2], [c, 4], [e, 2] as this is where we previously had suppression nodes.

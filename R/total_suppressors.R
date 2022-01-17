@@ -10,7 +10,7 @@ create_supp_total_list <- function(suppression_index,
   # find our suppression totals by column
   # i.e. find the total value for each value suppressed in a given column
   suppression_total_list <- unique(suppression_index[,2]) %>% 
-    purrr::map_df(~tibble(total = sum(unsuppressed_df[as.data.frame(suppression_index) %>% 
+    purrr::map_df(~dplyr::tibble(total = sum(unsuppressed_df[as.data.frame(suppression_index) %>% 
                                                         dplyr::filter(col == .x) %>% 
                                                         dplyr::pull(row), .x] %>% 
                                         unlist(), na.rm = TRUE),
