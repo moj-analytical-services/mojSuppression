@@ -145,7 +145,6 @@ suppress_single_group <- function(
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   df_to_suppress <- df
-  nrow_supp_df <- nrow(df_to_suppress)
   
   if(subset_df_along_row_and_col_arguments) {
     df_to_suppress <- df_to_suppress[,cols_to_suppress] # subset cols (keep only numeric cols...)
@@ -153,6 +152,7 @@ suppress_single_group <- function(
       df_to_suppress <- df_to_suppress[row_nos_to_suppress,]
     }
   }
+  nrow_supp_df <- nrow(df_to_suppress)
   
   # ensure we don't run into any errors...
   df_to_suppress <- df_to_suppress %>% 
@@ -328,8 +328,8 @@ suppress_single_group <- function(
   
   #set value to output where suppression has occurred (default is to leave it as is)
   df <- df %>% 
-    mutate_at(cols_to_suppress,
-              ~ifelse(. == 9999999, suppression_output_value, .))
+    dplyr::mutate_at(cols_to_suppress,
+                     ~ifelse(. == 9999999, suppression_output_value, .))
   
   return(df)
 }
