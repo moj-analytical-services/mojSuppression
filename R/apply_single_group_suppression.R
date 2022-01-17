@@ -106,6 +106,7 @@ suppress_single_group <- function(
   if(rlang::is_missing(suppression_thres)) {
     stop("No suppression threshold has been set. Please add a value for suppression_thres when initialising the function.")
   }
+  
   if(rlang::is_missing(cols_to_suppress)) {
     print("No columns specified for suppression - all columns will be used.")
   }
@@ -144,6 +145,7 @@ suppress_single_group <- function(
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   df_to_suppress <- df
+  nrow_supp_df <- nrow(df_to_suppress)
   
   if(subset_df_along_row_and_col_arguments) {
     df_to_suppress <- df_to_suppress[,cols_to_suppress] # subset cols (keep only numeric cols...)
@@ -204,7 +206,7 @@ suppress_single_group <- function(
   }
   
   # also check if the user has specified that suppression totals should exceed the threshold, and that ncol > 2
-  if((total_suppression | indirect_suppression) & length(cols_to_suppress) > 2) {
+  if((total_suppression | indirect_suppression) & length(cols_to_suppress) > 2 & nrow_supp_df > 1) {
     df_to_suppress <- suppress_col_total_below_supp_thres(
       df_to_suppress,
       unsuppressed_df,
@@ -235,7 +237,8 @@ suppress_single_group <- function(
   if(
     all("col" == where_to_suppress) & # if we're including secondary suppression, and this is only on columns, apply regular column secondary supp
     inc_secondary_suppression & 
-    is.null(priority_row_suppression)
+    is.null(priority_row_suppression) &
+    nrow_supp_df > 1
   ) {
     if(is_list(df_to_suppress)) df_to_suppress <- df_to_suppress[[1]]
     df_to_suppress <- df_to_suppress %>% 
@@ -243,7 +246,7 @@ suppress_single_group <- function(
                        ~apply_secondary_suppression_cols(.x,
                                                          secondary_suppress_0))
   } else if(
-    all("row" == where_to_suppress) # if we're only including row suppression, apply primary and secondary suppression according to arguments
+    all("row" == where_to_suppress) & nrow_supp_df > 1 # if we're only including row suppression, apply primary and secondary suppression according to arguments
   ){
     if(is_list(df_to_suppress)) df_to_suppress <- df_to_suppress[[1]]
     df_to_suppress <- apply_suppression_rows(df_to_suppress, 
@@ -255,7 +258,7 @@ suppress_single_group <- function(
                                              inc_primary_suppression = !suppression_pre_applied,  # invert input
                                              secondary_suppress_0)
   } else if(
-    all(c("col", "row") %in% where_to_suppress & inc_secondary_suppression) # otherwise, if we're suppressing both rows and columns, we need to apply some fancier suppression (function family cross-referenced suppression)
+    all(c("col", "row") %in% where_to_suppress & inc_secondary_suppression & nrow_supp_df > 1) # otherwise, if we're suppressing both rows and columns, we need to apply some fancier suppression (function family cross-referenced suppression)
     # this looks to check where previous suppression has occurred and attempts to put any required secondary suppression in corresponding gaps, so we don't oversuppress
   ){
     # primary suppression applied in an earlier stage, so just fill in any gaps created
@@ -274,7 +277,8 @@ suppress_single_group <- function(
   }
   
   # and finally, apply priority row suppression where required...
-  if(!is.null(priority_row_suppression) & 
+  if(!is.null(priority_row_suppression) &
+     nrow_supp_df > 1 &
      inc_secondary_suppression == "TRUE" & 
      !all(c("col", "row") %in% where_to_suppress)) { # only run when either only row or only column suppression has been selected
     df_to_suppress <- apply_priority_row_suppression(
@@ -288,7 +292,7 @@ suppress_single_group <- function(
   
   # finally, run a check to ensure that our suppression totals exceeds the suppression threshold (assuming the argument is set to TRUE)
   # this is to ensure that users of the final output can't decipher how many people exist across multiple 
-  if(total_suppression | indirect_suppression) {
+  if(total_suppression | indirect_suppression & nrow_supp_df > 1) {
     if(all("col" == where_to_suppress)) {
       df_to_suppress <- suppress_col_total_below_supp_thres(
         df_to_suppress,
@@ -314,7 +318,6 @@ suppress_single_group <- function(
     }
   }
   
-  # unlist if required
   if(is_list(df_to_suppress)) df_to_suppress <- df_to_suppress[[1]]
   
   # bind our subset values back onto the original (if required)
@@ -322,10 +325,10 @@ suppress_single_group <- function(
     # subset our df accordingly
     df[row_nos_to_suppress,cols_to_suppress] <- df_to_suppress
   }
-    
+  
   #set value to output where suppression has occurred (default is to leave it as is)
   df <- df %>% 
-    dplyr::mutate_at(cols_to_suppress,
+    mutate_at(cols_to_suppress,
               ~ifelse(. == 9999999, suppression_output_value, .))
   
   return(df)

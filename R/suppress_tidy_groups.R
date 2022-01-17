@@ -28,7 +28,7 @@
 # See the examples section for more info
 suppress_tidy_data <- function(df, # specify dataframe to suppress on
                                where_to_suppress = c("col"), # which orientation to suppress on. For both row and column supp: c("row", "col")
-                               cols_to_suppress, # columns to suppress on. These should be presented like so: c("col1", "col2", ...)
+                               cols_to_suppress = NULL, # columns to suppress on. These should be presented like so: c("col1", "col2", ...)
                                groups_to_suppress_across, # groups to suppress across. 
                                suppression_pre_applied = FALSE, # if this function is being used after suppression has already been applied, skip on primary suppression
                                # this should primarily be used in conjunction with suppress_single_group on a df that's been binded together after initial suppression has been applied
@@ -43,6 +43,21 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
                                
 ) {
   
+  if(rlang::is_missing(suppression_thres)) {
+    stop("No suppression threshold has been set. Please add a value for suppression_thres when initialising the function.")
+  }
+  
+  if(rlang::is_missing(cols_to_suppress)) {
+    print("No columns specified for suppression - all columns will be used.")
+  }
+  
+  # if no cols are entered for suppression, select all numeric cols
+  if(is.null(cols_to_suppress)) {
+    cols_to_suppress <- df %>% 
+      dplyr::select_if(is.numeric) %>% 
+      colnames()
+  }
+  
   #create a new "concat" field which combines all of our groups to suppress on
   concat_vals <- groups_to_suppress_across %>% 
     purrr::map(~df[[.x]])
@@ -55,16 +70,16 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
   if(any("row" %in% where_to_suppress)) { suppress_rows <- TRUE } else { suppress_rows <- FALSE }
   suppressed_df <- suppression_groups %>% 
     purrr::map_df(~ filter_supp_function(df, "concat", .,
-                                  where_to_suppress,
-                                  cols_to_suppress,
-                                  suppress_rows,
-                                  suppression_thres,
-                                  suppress_0,
-                                  inc_secondary_suppression,
-                                  suppression_pre_applied,
-                                  total_suppression,
-                                  indirect_suppression,
-                                  secondary_suppress_0 = secondary_suppress_0
+                                         where_to_suppress,
+                                         cols_to_suppress,
+                                         suppress_rows,
+                                         suppression_thres,
+                                         suppress_0,
+                                         inc_secondary_suppression,
+                                         suppression_pre_applied,
+                                         total_suppression,
+                                         indirect_suppression,
+                                         secondary_suppress_0 = secondary_suppress_0
     ))
   
   #remove our new concat column
@@ -73,7 +88,7 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
   #set value to output where suppression has occurred (default is to leave it as is)
   suppressed_df <- suppressed_df %>%
     dplyr::mutate_at(cols_to_suppress,
-              ~ifelse(. == 9999999, suppression_output_value, .))
+                     ~ifelse(. == 9999999, suppression_output_value, .))
   
   return(suppressed_df)
 }
@@ -94,12 +109,12 @@ filter_supp_function <- function(
   secondary_suppress_0 = TRUE
 ){
   df <- df %>% dplyr::filter_at(filter_col,
-                         all_vars(. == filter_var))
+                                all_vars(. == filter_var))
   if(suppress_rows) { row_nos_to_suppress <- 1:nrow(df) } else { row_nos_to_suppress <- NULL }
   print(paste0("Suppressing on ", filter_var))
   if(nrow(df) <= 1) {
-    stop("Warning, you're attempting to tidy suppress on a df that when filtered has a row length of one. Please check to ensure
-         that your backing data is all correct before continuing.")
+    warning(stringr::str_glue("Warning, you're attempting to tidy suppress on a the group {filter_var}, that when filtered has a row length of one. Please check to ensure that your backing data is all correct before continuing.
+         This group will be suppressed as normal, but only limited suppression can be applied only one row exists."))
   }
   df <- df %>% 
     suppress_single_group(., 
