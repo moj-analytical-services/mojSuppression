@@ -15,6 +15,7 @@ suppress_tidy_data(
   inc_secondary_suppression = TRUE,
   suppression_output_value = 9999999,
   total_suppression = FALSE,
+  indirect_suppression = FALSE,
   secondary_suppress_0 = TRUE
 )
 }
