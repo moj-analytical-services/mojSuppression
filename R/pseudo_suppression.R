@@ -21,12 +21,12 @@ pseudo_suppress_columns <- function(df, # the original df to feed into the syste
   # find rows to suppress looking at whether our pseudo suppression cols raise any flags
   if(pseudo_suppress_0) {
     rows_to_suppress <- columns_to_pseudo_suppress %>% 
-      purrr::map(~which(pull(df, .x)<=pseudo_suppression_threshold)) %>% 
+      purrr::map(~which(dplyr::pull(df, .x)<=pseudo_suppression_threshold)) %>% 
       unlist() %>% 
       unique()
   } else {
     rows_to_suppress <- columns_to_pseudo_suppress %>% 
-      purrr::map(~which(pull(df, .x)<=pseudo_suppression_threshold & pull(df, .x)>0)) %>% 
+      purrr::map(~which(dplyr::pull(df, .x)<=pseudo_suppression_threshold & dplyr::pull(df, .x)>0)) %>% 
       unlist() %>% 
       unique()
   }

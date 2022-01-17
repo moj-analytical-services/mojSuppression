@@ -3,3 +3,4 @@
 export(simple_suppression)
 export(suppress_single_group)
 importFrom(magrittr,"%>%")
+importFrom("utils", "head")
