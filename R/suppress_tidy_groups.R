@@ -108,8 +108,8 @@ filter_supp_function <- function(
   indirect_suppression = FALSE,
   secondary_suppress_0 = TRUE
 ){
-  df <- df %>% dplyr::filter_at(filter_col,
-                                all_vars(. == filter_var))
+  # filter for our given field
+  df <- df %>% dplyr::filter(if_all(starts_with({{filter_col}}), ~ . == {{filter_var}}))
   if(suppress_rows) { row_nos_to_suppress <- 1:nrow(df) } else { row_nos_to_suppress <- NULL }
   print(paste0("Suppressing on ", filter_var))
   if(nrow(df) <= 1) {
