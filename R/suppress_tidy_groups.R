@@ -45,16 +45,16 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
   
   #create a new "concat" field which combines all of our groups to suppress on
   concat_vals <- groups_to_suppress_across %>% 
-    map(~df[[.x]])
+    purrr::map(~df[[.x]])
   df <- df %>% 
-    mutate(concat = reduce(concat_vals, stringr::str_c))
+    dplyr::mutate(concat = reduce(concat_vals, stringr::str_c))
   
   #find the groups we need to suppress across
   suppression_groups <- unique(df[["concat"]])
   # loop around our suppression groups and apply suppression. Then, bind this all back together
   if(any("row" %in% where_to_suppress)) { suppress_rows <- TRUE } else { suppress_rows <- FALSE }
   suppressed_df <- suppression_groups %>% 
-    map_df(~ filter_supp_function(df, "concat", .,
+    purrr::map_df(~ filter_supp_function(df, "concat", .,
                                   where_to_suppress,
                                   cols_to_suppress,
                                   suppress_rows,
@@ -68,11 +68,11 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
     ))
   
   #remove our new concat column
-  suppressed_df <- suppressed_df %>% select(-concat)
+  suppressed_df <- suppressed_df %>% dplyr::select(-concat)
   
   #set value to output where suppression has occurred (default is to leave it as is)
   suppressed_df <- suppressed_df %>%
-    mutate_at(cols_to_suppress,
+    dplyr::mutate_at(cols_to_suppress,
               ~ifelse(. == 9999999, suppression_output_value, .))
   
   return(suppressed_df)
@@ -93,7 +93,7 @@ filter_supp_function <- function(
   indirect_suppression = FALSE,
   secondary_suppress_0 = TRUE
 ){
-  df <- df %>% filter_at(filter_col,
+  df <- df %>% dplyr::filter_at(filter_col,
                          all_vars(. == filter_var))
   if(suppress_rows) { row_nos_to_suppress <- 1:nrow(df) } else { row_nos_to_suppress <- NULL }
   print(paste0("Suppressing on ", filter_var))
