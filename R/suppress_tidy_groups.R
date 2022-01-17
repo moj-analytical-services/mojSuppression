@@ -16,6 +16,8 @@
 #' @include pseudo_suppression.R
 #' @include total_suppressors.R
 #' @include apply_single_group_suppression.R
+#' 
+#' @export
 
 
 # function to apply both primary or secondary suppression across a selection of either rows, cols, or both for multiple groups in a single column
