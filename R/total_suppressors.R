@@ -60,16 +60,21 @@ duplicated_supp_nodes <- function(suppression_index, unsuppressed_df, suppressio
       dplyr::tibble(col = c, flag = any(c(1,suppression_thres) %>% purrr::map_lgl(~all(col_values == .x) && length(col_values)>1)))
     )
   }
-  # filter only for columns that need additional suppression...
-  suppression_checker <- suppression_checker %>% 
-    dplyr::filter(flag == TRUE)
   
-  return(suppression_checker$col)
+  if(nrow(suppression_checker)>0) {
+    # filter only for columns that need additional suppression...
+    suppression_checker <- suppression_checker %>% 
+      dplyr::filter(flag == TRUE)
+    
+    return(suppression_checker$col)
+  } else {
+    return(c())
+  }
+  
   
 }
 
 
-# main suppression note
 suppress_col_total_below_supp_thres <- function(
   suppressed_df, # version of your df that's already had suppression applied
   unsuppressed_df, # original unsuppressed version
@@ -84,7 +89,6 @@ suppress_col_total_below_supp_thres <- function(
   total_suppression = FALSE,
   indirect_suppression = FALSE
 ) {
-  
   # replace 0s if we don't want to secondary suppress on them
   if(!secondary_suppress_0) {
     suppressed_df[suppressed_df == 0] <- 33333333
@@ -92,12 +96,7 @@ suppress_col_total_below_supp_thres <- function(
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   if(subset_df_along_row_and_col_arguments) {
-    if(!is.null(cols_to_suppress)) { # subset rows only if we're working with rows
-      unsuppressed_df <- unsuppressed_df[,cols_to_suppress] # subset cols (keep only numeric cols...)
-    }
-    if(!is.null(rows_to_suppress)) { # subset rows only if we're working with rows
-      unsuppressed_df <- unsuppressed_df[rows_to_suppress,]
-    }
+    unsuppressed_df <- unsuppressed_df[rows_to_suppress,cols_to_suppress] # subset cols (keep only numeric cols...)
   }
   
   # create our suppression index. This documents where our suppression nodes are currently
@@ -245,6 +244,7 @@ suppress_col_total_below_supp_thres <- function(
       
       # pull out our required columns
       matrix_to_use <- suppressed_matrix[,cols_to_supp]
+      if(!is.matrix(matrix_to_use)) matrix_to_use <- matrix(matrix_to_use, nrow = 1)
       # find our min value pairs (name correspondings to the column in cross_df_matrix. Value corresponds to the total it has found to be the min)
       min_value_pairs <- find_min_value_pair(matrix_to_use, value_pair_len)
       
@@ -285,24 +285,19 @@ suppress_row_total_below_supp_thres <- function(
   suppression_threshold,
   subset_df_along_row_and_col_arguments,
   secondary_suppress_0,
-  running_total_supp = FALSE
+  running_total_supp = FALSE,
+  total_suppression,
+  indirect_suppression
 ) {
-  
   # create our transposed dfs
   transposed_df <- dplyr::as_tibble(t(df_to_suppress))
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   if(subset_df_along_row_and_col_arguments) {
-    if(!is.null(cols_to_suppress)) { # subset rows only if we're working with rows
-      unsuppressed_df <- unsuppressed_df[,cols_to_suppress] # subset cols (keep only numeric cols...)
-    }
-    if(!is.null(rows_to_suppress)) { # subset rows only if we're working with rows
-      unsuppressed_df <- unsuppressed_df[rows_to_suppress,]
-    }
+    unsuppressed_df <- unsuppressed_df[rows_to_suppress,cols_to_suppress] # subset cols (keep only numeric cols...)
   }
   # transpose our unsuppressed df
   transposed_unsupp_df <- dplyr::as_tibble(t(unsuppressed_df))
-  
   # apply column suppression to "rows"
   transposed_df <- suppress_col_total_below_supp_thres(
     suppressed_df = transposed_df, # version of your df that's already had suppression applied
@@ -313,15 +308,15 @@ suppress_row_total_below_supp_thres <- function(
     subset_df_along_row_and_col_arguments = FALSE,
     priority_rows_to_suppress = NULL, # set priority rows to suppress on
     secondary_suppress_0,
-    running_total_supp = FALSE
-  )
-  
+    running_total_supp = running_total_supp,
+    total_suppression = total_suppression,
+    indirect_suppression = indirect_suppression
+  )[[1]]
   # convert back to our original form
   column_names_df_to_supp <- colnames(df_to_suppress)
   df_to_suppress <- dplyr::as_tibble(t(transposed_df))
   # reset colnames
   colnames(df_to_suppress) <- column_names_df_to_supp
-  
   return(df_to_suppress)
   
 }
