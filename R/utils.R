@@ -61,7 +61,7 @@ find_flexible_min_value_pair <- function(matrix) {
     remaining_col_mins <- apply(matrix, 2, min)[apply(matrix, 2, min) > min_val_cols]
     remaining_col_mins <- remaining_col_mins[remaining_col_mins==min(remaining_col_mins)]
     min_val_cols <- which(unique(remaining_col_mins) == matrix, arr.ind=TRUE)
-    min_val_cols <- min_val_cols[min_val_cols[,"col"] != first_val[,2],]
+    min_val_cols <- min_val_cols[min_val_cols[,"col"] != unique(first_val[,2]),]
     second_val <- second_val_check(min_val_cols)
   } else {
     # if len larger than 1:
