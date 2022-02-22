@@ -62,8 +62,9 @@ apply_cross_reference_suppression_to_cols <- function(
   # loop around our columns that we've outlined as being potentials for cross reference suppression and find the minimum value that each column
   # has for valid cross-ref combinations. A cross-ref combination is defined at the top of this function.
   # while we still have columns that can be cross-referenced, the system will continue to loop
-  if(sum(unlist(cross_checker_list)>0, na.rm = TRUE) > length(cols_requiring_suppression) & 
-     length(total_cols_with_supp_flag) > 1 & length(cols_requiring_suppression) > 0) {
+  if(sum(unlist(cross_checker_list)>0, na.rm = TRUE) >= length(cols_requiring_suppression) & 
+     length(total_cols_with_supp_flag) > 1 & 
+     all(sum(unlist(cross_checker_list)>0, na.rm = TRUE) > 0, length(cols_requiring_suppression) > 0)) {
     potential_suppression_list <- 1 # initialise (so our loop starts)
     loop_counter <- 0
     while(length(unlist(potential_suppression_list)) > 0) { # while the system is still picking up items that can be suppressed
@@ -84,6 +85,7 @@ apply_cross_reference_suppression_to_cols <- function(
           if(length(column_data_potential_suppression)>0) {
             # create our names for each entry
             reference_names <- paste0("colname ~ ", i, "; rowref ~ ", potential_rows_to_suppress)
+            # reference <- c(i, potential_rows_to_suppress)
             names(column_data_potential_suppression) <- reference_names # add potential rows as names for our data
             column_data_potential_suppression <- column_data_potential_suppression[which(column_data_potential_suppression == min(column_data_potential_suppression, na.rm = TRUE))] # arrange to find order of preference for suppression - use which.min so we keep vector names...
             
@@ -104,7 +106,7 @@ apply_cross_reference_suppression_to_cols <- function(
       ) {
         # with this, identify row and column info for suppression
         col_to_suppress <- stringr::str_extract(names(suppression_item), "(?<=colname ~ ).*(?=;)")
-        row_to_suppress <- as.numeric(stringr::str_extract(names(suppression_item), "(?<=rowref ~ )[a-zA-Z|0-9]*"))
+        row_to_suppress <- as.numeric(str_extract(names(suppression_item), "(?<=rowref ~ )[a-zA-Z|0-9]*"))
         df[row_to_suppress, col_to_suppress] <- 9999999
         return(df)
       }
@@ -118,9 +120,12 @@ apply_cross_reference_suppression_to_cols <- function(
         # to check suppression totals for all items, create branches for all our suppression candidates
         # so we can check what suppressing down that branch would result in.
         # this replaces the idea of using a logic based algorithm to decide HOW and WHERE we suppress
-        # instead, we attempt many different branches to see what the most appropriate would be (brute forcing the correct answer - much like in backtracking, but slightly less sophisticated)
-        # this approach only works due to how quickly the code can suppress a single table, so speed isn't a concern
-        for(i in 2:length(suppression_item)) { 
+        # instead, we attempt many different branches to see what the most appropriate would be 
+        # (brute forcing the correct answer - much like in backtracking, but slightly less sophisticated)
+        # this approach only works due to how quickly the code can suppress a single table
+        for(i in 2:length(suppression_item)) {
+          # where required, return 0s to 33333333
+          df[df == 3333333] <- 33333333
           supp_list[[length(supp_list)+1]] <- apply_supp_using_references(
             df,
             suppression_item[i]
@@ -267,7 +272,8 @@ apply_cross_reference_suppression_cols <- function(supp_list,
                                                    columns_to_supp,
                                                    priority_row_suppression = NULL, # specify a row number to allow it make it the priority for secondary suppression. The designated row does not need to fall in your main suppression area 
                                                    # (not within cols_to_suppress and rows_to_suppress). Please only enter a single value for this. This is considered secondary suppression for argument purposes.
-                                                   ordered_priority_suppression = FALSE # set to TRUE if you'd like your priority suppression to follow the hierachy established in either the priority_row_suppression or priority_col_suppression arguments
+                                                   ordered_priority_suppression = FALSE, # set to TRUE if you'd like your priority suppression to follow the hierachy established in either the priority_row_suppression or priority_col_suppression arguments
+                                                   limit
                                                    # (i.e. for row priority, entering c(7, 2) will mean that row 7 is suppressed first and then row 2 is used if 7 was already suppressed)
 ) {
   
@@ -276,16 +282,26 @@ apply_cross_reference_suppression_cols <- function(supp_list,
          check your cols_to_suppress argument before continuing.")
   }
   # initially, run the code over the data
+  # print(stringr::str_glue("Length of supp_list is curretnly: {length(supp_list)}"))
   supp_list <- apply_cross_reference_suppression_to_cols(supp_list, columns_to_supp)
   
   # calculate outstanding columns requiring suppression
   cols_requiring_suppression <- columns_to_supp[columns_to_supp %>% purrr::map_lgl(~sum(supp_list[[1]][[.x]] == 9999999) == 1)]
   
+  # initialise prev_df
+  prev_df <- supp_list[[1]]
   loop_counter <- 0
-  while(length(cols_requiring_suppression) > 1) {
+  while(length(cols_requiring_suppression) > 1 & loop_counter <= limit) {
     # check for an infinite loop
     loop_counter <- loop_counter+1
     if(loop_counter > 1000) {stop("Infinite loop detected. Please review the underlying cross checker code before continuing.")}
+    
+    if(loop_counter > 0) {
+      # if dupe, then change our 0s back to the smaller value
+      if(isTRUE(all.equal(supp_list[[1]], prev_df))) {
+        supp_list[[1]][supp_list[[1]] == 33333333] <- 3333333
+      }
+    }
     
     out_list <- run_secondary_suppression_across_cross_checked_df(supp_list[[1]], 
                                                                   columns_to_supp,
@@ -294,21 +310,23 @@ apply_cross_reference_suppression_cols <- function(supp_list,
     ) # run code to apply secondary suppression to lowest col
     supp_list[[1]] <- out_list[[1]]
     out_list <- out_list[-1]
-    if(length(out_list)>0) {
-      for(i in length(out_list)) {
-        supp_list[[length(supp_list)+1]] <- out_list[[i]]
-      }
-    }
+    # add our additional dfs to our supp_list
+    supp_list <- c(supp_list, out_list)
     supp_list <- apply_cross_reference_suppression_to_cols(supp_list, columns_to_supp) # reapply our cross reference methodology
     # recalculate outstanding columns requiring suppression
     cols_requiring_suppression <- columns_to_supp[columns_to_supp %>% purrr::map_lgl(~sum(supp_list[[1]][[.x]] == 9999999) == 1)]
+    
+    # update our previous df flag and remove 0 conversion
+    prev_df <- supp_list[[1]]
+    supp_list[[1]][supp_list[[1]] == 3333333] <- 33333333
   }
   
   return(supp_list)
 }
 
 apply_cross_reference_suppression_to_rows <- function(supp_list, 
-                                                      columns_to_suppress
+                                                      columns_to_suppress,
+                                                      limit
 ) {
   # create a new list for our row suppression entries (this is to allow us to easily transpose the data back into its original format)
   transposed_df_list <- list(
@@ -329,10 +347,12 @@ apply_cross_reference_suppression_to_rows <- function(supp_list,
     transposed_df_list[[1]] <- t(transposed_df_list[[1]] %>% dplyr::select(columns_to_suppress)) # this transposes our origianl df and puts it in matrix form
     transposed_df_list[[1]] <- as.data.frame(transposed_df_list[[1]]) # transform back to df
     # with our df which has been inverted, reapply cross referenced suppression (this time, it should automatically detect where df gap can be filled for rows and failing that, apply sensible secondary suppression)
+    # print(stringr::str_glue("Loop starting size {length(transposed_df_list)}"))
     transposed_df_list <- apply_cross_reference_suppression_cols(transposed_df_list, 
-                                                                 colnames(transposed_df_list[[1]])
+                                                                 colnames(transposed_df_list[[1]]),
+                                                                 limit=limit
     )
-    
+    # print(stringr::str_glue("Loop exit size {length(transposed_df_list)}"))
     # loop around our transposed list and generate our cleaned output
     transposed_df_list <- transposed_df_list %>% 
       purrr::map(
@@ -341,7 +361,8 @@ apply_cross_reference_suppression_to_rows <- function(supp_list,
       )
     # plug our list back through column cross ref supp
     transposed_df_list <- apply_cross_reference_suppression_cols(transposed_df_list, 
-                                                                 columns_to_suppress)
+                                                                 columns_to_suppress,
+                                                                 limit=limit)
     # recheck our flags. If there now exist 0 flags in total, 
     row_flags <- rows_to_supp[rows_to_supp %>% purrr::map_lgl(~sum(transposed_df_list[[1]][.x,columns_to_suppress] %>% unlist() == 9999999) == 1)]
     
@@ -361,7 +382,8 @@ perform_cross_ref_suppression_on_single_col <- function(supp_list,
                                                         # (not within cols_to_suppress and rows_to_suppress). Please only enter a single value for this. This is considered secondary suppression for argument purposes.
                                                         ordered_priority_suppression = FALSE, # set to TRUE if you'd like your priority suppression to follow the hierachy established in either the priority_row_suppression or priority_col_suppression arguments
                                                         # (i.e. for row priority, entering c(7, 2) will mean that row 7 is suppressed first and then row 2 is used if 7 was already suppressed)
-                                                        secondary_suppress_0 = TRUE
+                                                        secondary_suppress_0 = TRUE,
+                                                        iteration_limit
 ) {
   
   # if we only have one column outstanding, apply secondary suppression along our remaining columns (by selecting the lowest available value) and then finalise by using our cross reference suppression technique
@@ -423,9 +445,10 @@ perform_cross_ref_suppression_on_single_col <- function(supp_list,
     supp_list <- apply_cross_reference_suppression_cols(supp_list, 
                                                         columns_to_suppress,
                                                         priority_row_suppression = priority_row_suppression,
-                                                        ordered_priority_suppression = ordered_priority_suppression
+                                                        ordered_priority_suppression = ordered_priority_suppression,
+                                                        limit=iteration_limit
     ) %>% 
-      apply_cross_reference_suppression_to_rows(., columns_to_suppress)
+      apply_cross_reference_suppression_to_rows(., columns_to_suppress, iteration_limit)
   }
   return(supp_list)
 }
@@ -487,10 +510,12 @@ apply_final_cross_suppression <- function(supp_list,
         ~dplyr::as_tibble(t(.x)) %>% 
           `colnames<-` (original_c_names)
       )
+    # replace the first value in our supp_list and return our final output
+    supp_list[[1]] <- transposed_df_list[[1]]
     
     supp_list <- c(
       supp_list,
-      transposed_df_list
+      transposed_df_list[-1]
     )
   }
   
@@ -510,7 +535,8 @@ apply_cross_referenced_suppression <- function(supp_df_list,
                                                indirect_suppression = FALSE,
                                                unsuppressed_df = NULL,
                                                suppression_thres,
-                                               rows_nos_to_suppress
+                                               rows_nos_to_suppress,
+                                               limit_branching
 ){
   # convert our df to a list, if it isn't already in that format
   if(!is_list(supp_df_list)) {
@@ -527,24 +553,30 @@ apply_cross_referenced_suppression <- function(supp_df_list,
         }
       )
   }
+  # set iteration limits if we're limit our branching
+  if(!is.null(limit_branching)) {iteration_limit = 2} else {iteration_limit=1000}
   
   # The next bit of code uses our supp_df_list (suppressed input list - this is either a single df, or multiple, depending on previous steps)
   # As we run the code, new items will be added to the list as 'suppression branches' (see code below)
   # These branches are simply instances where multiple decisions on what to suppress can be made (i.e. we have three 3s we can in theory suppress)
   # but it's not initially obvious which to suppress. If you do suppress manually, you'll come across plenty of examples where you have to take a minute
-  # to think about what the correct suppression step would be. This code "thinks" by branching and evaluating multiple possible solutions simultaenously,
+  # to think about what the correct suppression step would be. This code "thinks" by branching and evaluating multiple possible solutions,
   # allowing us to check all of these solutions and find the winner.
   
   # to simplify the alogrithm (at the cost of performance), run suppression checks across lots all paths we find, and evaluate to find the
   # best suppression selection available to us
   suppressed_list <- list()
   suppressed_sum <- c()
-  initialise <- TRUE
   
   # create a counter for our total iterations
   loop_iteration <- 0
-  while(length(supp_df_list) > 0) {
-    if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
+  
+  while(length(supp_df_list) > 0 & length(suppressed_list)<limit_branching) {
+    print(length(supp_df_list))
+    # if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
+    # print(paste0("Looping around main loop: ", loop_iteration))
+    # where appropriate, revert our 0s to 33333333
+    supp_df_list[[1]][supp_df_list[[1]] == 3333333] <- 33333333
     
     # create a quick function to apply all of our suppression functions...
     apply_suppression <- function(supp_df_list) {
@@ -553,25 +585,29 @@ apply_cross_referenced_suppression <- function(supp_df_list,
       supp_df_list <- apply_cross_reference_suppression_cols(supp_df_list, 
                                                              columns_to_suppress,
                                                              priority_row_suppression,
-                                                             ordered_priority_suppression
+                                                             ordered_priority_suppression,
+                                                             limit=iteration_limit
       ) %>%
-        apply_cross_reference_suppression_to_rows(., columns_to_suppress)
+        apply_cross_reference_suppression_to_rows(., columns_to_suppress, limit=iteration_limit)
       
       # finally, check if there is any additional suppression required
       supp_df_list <- apply_final_cross_suppression(supp_df_list, 
                                                     columns_to_suppress,
                                                     priority_row_suppression,
                                                     ordered_priority_suppression,
-                                                    secondary_suppress_0 = secondary_suppress_0
+                                                    secondary_suppress_0=secondary_suppress_0
       )
       return(supp_df_list)
     }
     
     # apply suppression
+    # print(stringr::str_glue("Length prior to supp {length(supp_df_list)}"))
     supp_df_list <- apply_suppression(supp_df_list)
+    # print(stringr::str_glue("Length after supp {length(supp_df_list)}"))
     
     # if we are suppressing on our column totals, apply our total suppression!
     if(total_suppression | indirect_suppression) {
+      
       # check only our current df and suppress totals if necessary
       supp_df_list[[1]] <- suppress_col_total_below_supp_thres(
         supp_df_list[[1]],
@@ -585,18 +621,20 @@ apply_cross_referenced_suppression <- function(supp_df_list,
         run_from_cross_ref = TRUE,
         total_suppression = total_suppression,
         indirect_suppression = indirect_suppression
-      )[[1]]
-      # %>% 
-      # # apply row total suppression
-      # suppress_row_total_below_supp_thres(
-      #   .,
-      #   unsuppressed_df,
-      #   suppression_threshold = suppression_thres,
-      #   cols_to_suppress = columns_to_suppress, # set cols to suppress on
-      #   rows_to_suppress = rows_nos_to_suppress, # set rows to suppress on
-      #   TRUE,
-      #   secondary_suppress_0 = secondary_suppress_0
-      # )
+      )[[1]] %>%
+        ## apply row total suppression
+        # very slow...
+        suppress_row_total_below_supp_thres(
+          .,
+          unsuppressed_df,
+          suppression_threshold = suppression_thres,
+          cols_to_suppress = columns_to_suppress, # set cols to suppress on
+          rows_to_suppress = rows_nos_to_suppress, # set rows to suppress on
+          TRUE,
+          secondary_suppress_0 = secondary_suppress_0,
+          total_suppression = total_suppression,
+          indirect_suppression = indirect_suppression
+        )
       
       # apply suppression again (following total being suppressed...)
       supp_df_list <- apply_suppression(supp_df_list)
@@ -612,8 +650,11 @@ apply_cross_referenced_suppression <- function(supp_df_list,
     # remove the first item in our list and iterate over the next version
     supp_df_list <- supp_df_list[-1]
     
-    initialise <- FALSE
     loop_iteration <- loop_iteration+1
+    print(stringr::str_glue("Loop iteration {loop_iteration}"))
+    print(stringr::str_glue("Supp_list length {length(suppressed_list)}"))
+    print(length(suppressed_list)<limit_branching)
+    
   }
   
   # select our best case
