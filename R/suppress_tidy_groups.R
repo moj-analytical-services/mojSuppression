@@ -114,9 +114,8 @@ filter_supp_function <- function(
   if(suppress_rows) { row_nos_to_suppress <- 1:nrow(df) } else { row_nos_to_suppress <- NULL }
   print(paste0("Suppressing on ", filter_var))
   if(nrow(df) <= 1) {
-    warning(stringr::str_glue("Warning, you're attempting to tidy suppress on a the group {filter_var}, that when filtered has a row length of one. Please check to ensure that your backing data is all correct before continuing.
+    warning(stringr::str_glue("Warning, you're attempting to tidy suppress on the group {filter_var}, that when filtered has a row length of one. Please check to ensure that your backing data is all correct before continuing.
          This group will be suppressed as normal, but only limited suppression can be applied only one row exists."))
-    print(df)
   }
   # apply suppression
   df <- df %>% 

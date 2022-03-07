@@ -14,6 +14,26 @@ devtools::install_github('moj-analytical-services/mojSuppression')
 
 If there are features you'd like implemented or if any bugs are found, please submit an `Issue`.
 
+## Disclaimer on methodology
+
+The main idea underpinning the row+col evaluation within this code is the idea of branching. 
+In short, where it's unclear what the next suppression step should be (i.e. we have multiple possible avenues we could go down), we will create and queue new branches to be evaluated later.
+
+The longer version is:
+As we run the code, new items will be added to the list as 'suppression branches'.
+These branches are simply instances where multiple decisions on what to suppress can be made (i.e. we have three 3s we can in theory suppress)
+but it's not initially obvious which to suppress. If you suppress manually, you'll come across plenty of examples where you have to take a minute
+to think about what the correct suppression step would be. This code "thinks" by branching and evaluating multiple possible solutions,
+allowing us to check all of these solutions and find the winner.
+
+The obvious flaw here is that this all comes at the cost of performance. In general, loops will be quick enough that you don't notice this. However,
+if you have a dataframe of 500+ cells, you'll quickly start creating branches into oblivion. Smaller dataframes (30ish rows and below) will easily run in < 1 second.
+
+The code allows you to limit the total number of branches evaluated to mitigate this looping hell. The output will always be a valid solution, but may not be the optimal
+solution.
+
+## Navigation
+
 Suppression functions available:
   - [simple_suppression](#simple_suppression)
   - [suppress_single_group](#banner)
