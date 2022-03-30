@@ -38,9 +38,9 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
                                suppression_output_value = 9999999, #set a value to output where suppression has occurred
                                total_suppression = FALSE, # set to TRUE if you don't want your suppression totals for rows or columns to fall below your suppression threshold. i.e. if you suppression two 1s in a column, this will suppress a third value for you
                                indirect_suppression = FALSE,
-                               secondary_suppress_0 = TRUE # set to FALSE to prevent 0s from taking precendence for suppression (though will be suppressed if it's the only option)
+                               secondary_suppress_0 = TRUE, # set to FALSE to prevent 0s from taking precendence for suppression (though will be suppressed if it's the only option)
                                # this argument currently has no impact on the cross suppression used throughout. If you opt to suppress on both rows and cols, some 0s may be suppressed in the process
-                               
+                               limit_branching = NULL # edit to change the speed of the code. Leave this as default if you'd like the optimal solution. If you'd rather just find a solution, even if it's not optimal, change this to 2-5.
 ) {
   
   if(rlang::is_missing(suppression_thres)) {
@@ -80,7 +80,8 @@ suppress_tidy_data <- function(df, # specify dataframe to suppress on
                                          suppression_pre_applied,
                                          total_suppression,
                                          indirect_suppression,
-                                         secondary_suppress_0 = secondary_suppress_0
+                                         secondary_suppress_0 = secondary_suppress_0,
+                                         limit_branching = limit_branching
     ))
   
   #remove our new concat column
@@ -107,7 +108,8 @@ filter_supp_function <- function(
   suppression_pre_applied = FALSE,
   total_suppression = FALSE,
   indirect_suppression = FALSE,
-  secondary_suppress_0 = TRUE
+  secondary_suppress_0 = TRUE,
+  limit_branching = NULL
 ){
   
   df <- df %>% dplyr::filter(concat == filter_var)
@@ -129,7 +131,8 @@ filter_supp_function <- function(
                           suppression_pre_applied = suppression_pre_applied,
                           total_suppression = total_suppression,
                           indirect_suppression = indirect_suppression,
-                          secondary_suppress_0 = secondary_suppress_0)
+                          secondary_suppress_0 = secondary_suppress_0,
+                          limit_branching = limit_branching)
   
   return(df)
 }
