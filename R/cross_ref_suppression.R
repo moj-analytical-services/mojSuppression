@@ -571,7 +571,7 @@ apply_cross_referenced_suppression <- function(supp_df_list,
   # create a counter for our total iterations
   loop_iteration <- 0
   
-  while(length(supp_df_list) > 0 & length(suppressed_list)<limit_branching) {
+  while(length(supp_df_list) > 0 & length(suppressed_list)<iteration_limit) {
     print(length(supp_df_list))
     # if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
     # print(paste0("Looping around main loop: ", loop_iteration))
