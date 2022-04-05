@@ -81,16 +81,17 @@ mojSuppression::simple_suppression(
 ### suppress_tidy_data
 
 
-This function simply extends the single group suppression functions and allows the user to suppress across multiple groups in one function.
+This function simply extends the single group suppression functions, allowing the user to suppress across multiple groups simultaneously.
 
 So, say you had a dataframe that looked like this:
 
 ![Screenshot 2022-04-05 at 17 35 30](https://user-images.githubusercontent.com/45356472/161803015-51c7c20a-5b20-49ec-a051-35a0f76251ae.png)
 
-Here, `LONDON` and `WALES` should be suppressed independently of one another. That is, secondary suppression should be applied to `LONDON` and also `WALES`.
+Here, `LONDON` and `WALES` should be suppressed **independently** of one another. 
+That is, secondary suppression should be applied to both `LONDON` and `WALES`, as opposed to the dataframe as a whole.
 
 
-Thie `suppress_tidy_data` function resolves htis issue by breaking the dataframe up into individual parts and then performing suppression across each section.
+The `suppress_tidy_data` function resolves this issue by breaking the dataframe up into individual parts and then performing suppression across each section.
 
 In code, this looks like:
 ```
@@ -109,3 +110,6 @@ mojSuppression::suppress_tidy_data(
   suppression_thres = 2
 )
 ```
+
+With the output being:
+![Screenshot 2022-04-05 at 17 42 16](https://user-images.githubusercontent.com/45356472/161804202-f5af00dd-0a88-4335-8f11-82034b0d02b2.png)
