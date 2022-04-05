@@ -112,4 +112,5 @@ mojSuppression::suppress_tidy_data(
 ```
 
 With the output being:
+<br>
 ![Screenshot 2022-04-05 at 17 42 16](https://user-images.githubusercontent.com/45356472/161804202-f5af00dd-0a88-4335-8f11-82034b0d02b2.png)
