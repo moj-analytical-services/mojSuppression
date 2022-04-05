@@ -37,7 +37,9 @@ solution.
 Suppression functions available:
   - [simple_suppression](#simple_suppression)
   - [suppress_single_group](#banner)
-  - [suppress_tidy_data](#radio-button)
+  - [suppress_tidy_data](#suppress_tidy_data)
+
+<hr>
 
 ### simple_suppression
 Simple suppression function without any additional bells and whistles. 
@@ -73,5 +75,37 @@ mojSuppression::simple_suppression(
   row_nos_to_suppress = 1:nrow(test_df), # you can leave this blank if you wish to supp all rows
   suppression_thres = 2,
   suppression_output_value = "~"
+)
+```
+
+### suppress_tidy_data
+
+
+This function simply extends the single group suppression functions and allows the user to suppress across multiple groups in one function.
+
+So, say you had a dataframe that looked like this:
+
+![Screenshot 2022-04-05 at 17 35 30](https://user-images.githubusercontent.com/45356472/161803015-51c7c20a-5b20-49ec-a051-35a0f76251ae.png)
+
+Here, `LONDON` and `WALES` should be suppressed independently of one another. That is, secondary suppression should be applied to `LONDON` and also `WALES`.
+
+
+Thie `suppress_tidy_data` function resolves htis issue by breaking the dataframe up into individual parts and then performing suppression across each section.
+
+In code, this looks like:
+```
+# Create df
+location <- c("LONDON", "LONDON", "LONDON", "LONDON", "LONDON", "WALES", "WALES", "WALES", "WALES")
+col1 <- c(1, 75, 1, 5, 1, 6, 55, 1, 12)
+
+new_table <- dplyr::tibble(location = location,
+              headcount = col1)
+              
+# apply tidy suppression
+mojSuppression::suppress_tidy_data(
+  df=new_table,
+  groups_to_suppress_across = c("location"), # this can be more than one column
+  where_to_suppress="col",
+  suppression_thres = 2
 )
 ```
