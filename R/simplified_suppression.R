@@ -97,11 +97,11 @@ simple_suppression <- function(
   df <- suppress_single_group(
     df,
     where_to_suppress = where_to_suppress,
-    cols_to_suppress = NULL,
-    row_nos_to_suppress = NULL,
+    cols_to_suppress = cols_to_suppress,
+    row_nos_to_suppress = row_nos_to_suppress,
     suppression_thres,
-    suppress_0 = TRUE,
-    inc_secondary_suppression = TRUE,
+    suppress_0 = suppress_0,
+    inc_secondary_suppression = inc_secondary_suppression,
     suppression_output_value = suppression_output_value,
     subset_df_along_row_and_col_arguments = subset_df_along_row_and_col_arguments,
     columns_to_pseudo_suppress = columns_to_pseudo_suppress,
@@ -113,7 +113,7 @@ simple_suppression <- function(
     suppression_pre_applied = suppression_pre_applied,
     total_suppression = total_suppression,
     indirect_suppression = FALSE,
-    secondary_suppress_0 = TRUE
+    secondary_suppress_0 = secondary_suppress_0
   )
   
   return(df)
