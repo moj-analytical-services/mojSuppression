@@ -102,7 +102,7 @@ simple_suppression <- function(
     suppression_thres,
     suppress_0 = TRUE,
     inc_secondary_suppression = TRUE,
-    suppression_output_value = 9999999,
+    suppression_output_value = suppression_output_value,
     subset_df_along_row_and_col_arguments = subset_df_along_row_and_col_arguments,
     columns_to_pseudo_suppress = columns_to_pseudo_suppress,
     rows_to_pseudo_suppress = rows_to_pseudo_suppress,
