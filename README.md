@@ -87,7 +87,7 @@ So, say you had a dataframe that looked like this:
 
 ![Screenshot 2022-04-05 at 17 35 30](https://user-images.githubusercontent.com/45356472/161803015-51c7c20a-5b20-49ec-a051-35a0f76251ae.png)
 
-Here, `LONDON` and `WALES` should be suppressed **independently** of one another. 
+Here, we'd like `LONDON` and `WALES` to be suppressed **independently** of one another. 
 That is, secondary suppression should be applied to both `LONDON` and `WALES`, as opposed to the dataframe as a whole.
 
 
