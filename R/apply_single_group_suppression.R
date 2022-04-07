@@ -258,7 +258,6 @@ suppress_single_group <- function(
         total_suppression = total_suppression,
         indirect_suppression = indirect_suppression
       )
-    }
     
   }
   
