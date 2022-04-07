@@ -79,6 +79,7 @@ suppress_col_total_below_supp_thres <- function(
   suppressed_df, # version of your df that's already had suppression applied
   unsuppressed_df, # original unsuppressed version
   suppression_threshold,
+  where_to_suppress=c("col", "row"), # "col" is the special case we need to be cautious of
   cols_to_suppress = NULL, # set cols to suppress on
   rows_to_suppress = NULL, # set rows to suppress on
   subset_df_along_row_and_col_arguments,
@@ -96,11 +97,22 @@ suppress_col_total_below_supp_thres <- function(
   
   # initially, subset df if required (so we only suppress across selected row/col combos)
   if(subset_df_along_row_and_col_arguments) {
+    if (is.null(rows_to_suppress)) rows_to_suppress=1:nrow(unsuppressed_df)
+    if (is.null(cols_to_suppress)) cols_to_suppress=colnames(unsuppressed_df)
     unsuppressed_df <- unsuppressed_df[rows_to_suppress,cols_to_suppress] # subset cols (keep only numeric cols...)
   }
   
-  # create our suppression index. This documents where our suppression nodes are currently
-  # located in our matrix
+  # if we are suppressing rows only, then transpose
+  if(where_to_suppress=="row") {
+    stored_colnames <- 
+      list(suppressed = colnames(suppressed_df), 
+           unsuppressed = colnames(unsuppressed_df))
+    suppressed_df <- t(suppressed_df)
+    unsuppressed_df <- t(unsuppressed_df)
+  }
+  
+  # create our suppression index. This documents where our suppression nodes 
+  # are currently located in our matrix
   suppression_index <- which(as.matrix(suppressed_df) == 9999999, arr.ind=TRUE)
   
   # create a breakdown of all current suppression nodes
@@ -168,28 +180,47 @@ suppress_col_total_below_supp_thres <- function(
   
   
   # using the above, apply secondary suppression where required
-  if(running_total_supp & length(cols_to_supp)==1) {
+  if((running_total_supp & length(cols_to_supp)==1) | 
+     all(where_to_suppress=="col") | all(where_to_suppress=="row")
+  ) {
     
-    # find lowest value and suppress there (if there are multiple, just sample for simplicity)
-    # if we have the time at a later date, look for the lowest min couplet
-    x <- suppressed_matrix[,cols_to_supp]
-    row_to_redact <- which(x == min(x[!is.infinite(x)], na.rm = TRUE))
-    supp_df_list <- row_to_redact %>% 
-      purrr::map(
-        ~{
-          # overwrite each potential value with our suppression node
-          suppressed_df[.x, cols_to_supp] <- 9999999
-          
-          # replace 0s if we don't want to secondary suppress on them
-          if(!secondary_suppress_0 & !run_from_cross_ref) {
-            suppressed_df[suppressed_df == 33333333] <- 0
+    total_suppress_col <- function(matrix, cols_to_supp) {
+      # find lowest value and suppress there (if there are multiple, 
+      # just sample for simplicity).
+      x <- matrix[,cols_to_supp]
+      row_to_redact <- which(x == min(x[!is.infinite(x)], na.rm = TRUE))
+      supp_df_list <- row_to_redact %>%
+        purrr::map(
+          ~{
+            # overwrite each potential value with our suppression node
+            suppressed_df[.x, cols_to_supp] <- 9999999
+            
+            # replace 0s if we don't want to secondary suppress on them
+            if(!secondary_suppress_0 & !run_from_cross_ref) {
+              suppressed_df[suppressed_df == 33333333] <- 0
+              suppressed_df[suppressed_df == 3333333] <- 0 # lazy solution...
+            }
+            # return supp df
+            suppressed_df
           }
-          # return supp df
-          suppressed_df
-        }
-      )
-    # return our new list
-    return(supp_df_list)
+        )
+      
+      set.seed(55)
+      return(supp_df_list[[sample(1:length(supp_df_list), 1)]])
+    }
+    
+    if(running_total_supp) return(total_suppress_col(suppressed_matrix, cols_to_supp))
+    suppressed_matrix[suppressed_matrix==33333333] <- 3333333
+    # if row supp, convert transpose back!
+    if(where_to_suppress=="row") {
+      out <- total_suppress_col(suppressed_matrix, cols_to_supp)
+      out <- t(suppressed_matrix)
+      colnames(out) <- stored_colnames$suppressed
+      return(out)
+    } else {
+      return(total_suppress_col(suppressed_matrix, cols_to_supp))
+    }
+    
     
   } else if(length(cols_to_supp) == 1) { # i.e. only one row requires attention
     # pull out our main col
