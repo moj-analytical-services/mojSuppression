@@ -257,7 +257,7 @@ suppress_single_group <- function(
         running_total_supp = TRUE,
         total_suppression = total_suppression,
         indirect_suppression = indirect_suppression
-      )
+      )[[1]]
     
   }
   
@@ -335,7 +335,7 @@ suppress_single_group <- function(
       secondary_suppress_0=secondary_suppress_0,
       total_suppression=total_suppression,
       indirect_suppression=indirect_suppression
-    )
+    )[[1]]
     
   }
   

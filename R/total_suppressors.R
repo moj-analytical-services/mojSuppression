@@ -90,6 +90,10 @@ suppress_col_total_below_supp_thres <- function(
   total_suppression = FALSE,
   indirect_suppression = FALSE
 ) {
+  # grab a snapshot of our suppression dataframe, so we can return it early
+  # to the user if we do not need to apply any suppression at this step.
+  raw_suppressed <- suppressed_df
+  
   # replace 0s if we don't want to secondary suppress on them
   if(!secondary_suppress_0) {
     suppressed_df[suppressed_df == 0] <- 33333333
@@ -178,7 +182,7 @@ suppress_col_total_below_supp_thres <- function(
   }
   
   
-  
+  if(length(cols_to_supp)==0) return(list(raw_suppressed))
   # using the above, apply secondary suppression where required
   if((running_total_supp & length(cols_to_supp)==1) | 
      all(where_to_suppress=="col") | all(where_to_suppress=="row")
@@ -204,9 +208,8 @@ suppress_col_total_below_supp_thres <- function(
             suppressed_df
           }
         )
-      
       set.seed(55)
-      return(supp_df_list[[sample(1:length(supp_df_list), 1)]])
+      return(list(supp_df_list[[sample(1:length(supp_df_list), 1)]]))
     }
     
     if(running_total_supp) return(total_suppress_col(suppressed_matrix, cols_to_supp))
