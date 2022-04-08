@@ -217,7 +217,6 @@ suppress_col_total_below_supp_thres <- function(
     looped_total_suppress_col <- function(
       matrix, df, cols_to_supp, where_to_suppress
     ) {
-      print(where_to_suppress)
       # simply run the total_suppress_col in a loop to account for multiple
       # column inputs
       
