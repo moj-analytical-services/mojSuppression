@@ -93,6 +93,7 @@ suppress_col_total_below_supp_thres <- function(
   # grab a snapshot of our suppression dataframe, so we can return it early
   # to the user if we do not need to apply any suppression at this step.
   raw_suppressed <- suppressed_df
+  stored_colnames <- colnames(suppressed_df)
   
   # replace 0s if we don't want to secondary suppress on them
   if(!secondary_suppress_0) {
@@ -108,11 +109,8 @@ suppress_col_total_below_supp_thres <- function(
   
   # if we are suppressing rows only, then transpose
   if(where_to_suppress=="row") {
-    stored_colnames <- 
-      list(suppressed = colnames(suppressed_df), 
-           unsuppressed = colnames(unsuppressed_df))
-    suppressed_df <- t(suppressed_df)
-    unsuppressed_df <- t(unsuppressed_df)
+    suppressed_df <- dplyr::as_tibble(t(suppressed_df))
+    unsuppressed_df <- dplyr::as_tibble(t(unsuppressed_df))
   }
   
   # create our suppression index. This documents where our suppression nodes 
@@ -181,48 +179,86 @@ suppress_col_total_below_supp_thres <- function(
     row_index <- 1:nrow(suppressed_df)
   }
   
-  
   if(length(cols_to_supp)==0) return(list(raw_suppressed))
   # using the above, apply secondary suppression where required
   if((running_total_supp & length(cols_to_supp)==1) | 
      all(where_to_suppress=="col") | all(where_to_suppress=="row")
   ) {
     
-    total_suppress_col <- function(matrix, cols_to_supp) {
+    
+    total_suppress_col <- function(matrix, df, col_to_supp, where_to_supp) {
+      
       # find lowest value and suppress there (if there are multiple, 
       # just sample for simplicity).
-      x <- matrix[,cols_to_supp]
+      x <- matrix[,col_to_supp]
       row_to_redact <- which(x == min(x[!is.infinite(x)], na.rm = TRUE))
       supp_df_list <- row_to_redact %>%
         purrr::map(
           ~{
             # overwrite each potential value with our suppression node
-            suppressed_df[.x, cols_to_supp] <- 9999999
+            df[.x, col_to_supp] <- 9999999
             
             # replace 0s if we don't want to secondary suppress on them
             if(!secondary_suppress_0 & !run_from_cross_ref) {
-              suppressed_df[suppressed_df == 33333333] <- 0
-              suppressed_df[suppressed_df == 3333333] <- 0 # lazy solution...
+              df[df == 33333333] <- 0
+              df[df == 3333333] <- 0 # lazy solution...
             }
             # return supp df
-            suppressed_df
+            df
           }
         )
       set.seed(55)
-      return(list(supp_df_list[[sample(1:length(supp_df_list), 1)]]))
+      out <- supp_df_list[[sample(1:length(supp_df_list), 1)]]
+
+      return(out)
+      
     }
     
-    if(running_total_supp) return(total_suppress_col(suppressed_matrix, cols_to_supp))
-    suppressed_matrix[suppressed_matrix==33333333] <- 3333333
-    # if row supp, convert transpose back!
-    if(where_to_suppress=="row") {
-      out <- total_suppress_col(suppressed_matrix, cols_to_supp)
-      out <- t(suppressed_matrix)
-      colnames(out) <- stored_colnames$suppressed
-      return(out)
-    } else {
-      return(total_suppress_col(suppressed_matrix, cols_to_supp))
+    looped_total_suppress_col <- function(
+      matrix, df, cols_to_supp, where_to_suppress
+    ) {
+      print(where_to_suppress)
+      # simply run the total_suppress_col in a loop to account for multiple
+      # column inputs
+      
+      for(col in cols_to_supp) {
+        df <- total_suppress_col(
+          matrix,
+          df,
+          col, 
+          where_to_suppress
+        )
+      }
+      
+      # transpose if required...
+      if(where_to_suppress=="row") {
+        df <- dplyr::as_tibble(t(df))
+        colnames(df) <- stored_colnames
+      }
+      
+      return(df)
     }
+    
+    # now apply our total suppression!
+    if(running_total_supp) {
+      out <- looped_total_suppress_col(
+        suppressed_matrix,
+        suppressed_df,
+        cols_to_supp, 
+        where_to_suppress
+      )
+      return(list(out))
+    }
+    
+    suppressed_matrix[suppressed_matrix==33333333] <- 3333333
+    suppressed_df[suppressed_df==33333333] <- 3333333
+    # if row supp, convert transpose back!
+    out <- looped_total_suppress_col(
+      suppressed_matrix,
+      suppressed_df,
+      cols_to_supp, 
+      where_to_suppress)
+    return(list(out))
     
     
   } else if(length(cols_to_supp) == 1) { # i.e. only one row requires attention
