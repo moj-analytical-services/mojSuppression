@@ -282,7 +282,6 @@ apply_cross_reference_suppression_cols <- function(supp_list,
          check your cols_to_suppress argument before continuing.")
   }
   # initially, run the code over the data
-  # print(stringr::str_glue("Length of supp_list is curretnly: {length(supp_list)}"))
   supp_list <- apply_cross_reference_suppression_to_cols(supp_list, columns_to_supp)
   
   # calculate outstanding columns requiring suppression
@@ -347,12 +346,10 @@ apply_cross_reference_suppression_to_rows <- function(supp_list,
     transposed_df_list[[1]] <- t(transposed_df_list[[1]] %>% dplyr::select(columns_to_suppress)) # this transposes our origianl df and puts it in matrix form
     transposed_df_list[[1]] <- as.data.frame(transposed_df_list[[1]]) # transform back to df
     # with our df which has been inverted, reapply cross referenced suppression (this time, it should automatically detect where df gap can be filled for rows and failing that, apply sensible secondary suppression)
-    # print(stringr::str_glue("Loop starting size {length(transposed_df_list)}"))
     transposed_df_list <- apply_cross_reference_suppression_cols(transposed_df_list, 
                                                                  colnames(transposed_df_list[[1]]),
                                                                  limit=limit
     )
-    # print(stringr::str_glue("Loop exit size {length(transposed_df_list)}"))
     # loop around our transposed list and generate our cleaned output
     transposed_df_list <- transposed_df_list %>% 
       purrr::map(
@@ -572,9 +569,7 @@ apply_cross_referenced_suppression <- function(supp_df_list,
   loop_iteration <- 0
   
   while(length(supp_df_list) > 0 & length(suppressed_list)<iteration_limit) {
-    print(length(supp_df_list))
     # if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
-    # print(paste0("Looping around main loop: ", loop_iteration))
     # where appropriate, revert our 0s to 33333333
     supp_df_list[[1]][supp_df_list[[1]] == 3333333] <- 33333333
     
@@ -601,9 +596,7 @@ apply_cross_referenced_suppression <- function(supp_df_list,
     }
     
     # apply suppression
-    # print(stringr::str_glue("Length prior to supp {length(supp_df_list)}"))
     supp_df_list <- apply_suppression(supp_df_list)
-    # print(stringr::str_glue("Length after supp {length(supp_df_list)}"))
     
     # if we are suppressing on our column totals, apply our total suppression!
     if(total_suppression | indirect_suppression) {
@@ -651,9 +644,6 @@ apply_cross_referenced_suppression <- function(supp_df_list,
     supp_df_list <- supp_df_list[-1]
     
     loop_iteration <- loop_iteration+1
-    print(stringr::str_glue("Loop iteration {loop_iteration}"))
-    print(stringr::str_glue("Supp_list length {length(suppressed_list)}"))
-    print(length(suppressed_list)<limit_branching)
     
   }
   

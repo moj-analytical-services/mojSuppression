@@ -43,7 +43,6 @@ apply_suppression_rows <- function(
   inc_primary_suppression = TRUE, # opt to remove primary suppression (secondary in turn won't work if no values == 9999999).
   secondary_suppress_0 = TRUE # set to FALSE to prevent 0s from taking precendence for suppression (though will be suppressed if it's the only option)
 ) { 
-  
   #error if no or invalid row numbers are entered
   if(length(row_nos_to_suppress) == 0|!class(row_nos_to_suppress) %in% c("numeric", "integer")) {
     stop(print("Invalid or no row numbers given to suppress on. Please ensure that these are corrected or specified before continuing."))
@@ -55,7 +54,7 @@ apply_suppression_rows <- function(
   }
   
   #loop around the rows requiring suppression
-  for(i in row_nos_to_suppress) {
+  for(i in row_nos_to_suppress) { # it'd be considerably more efficient not to loop...
     #isolate the row to suppress
     row_to_supp <- df[i,] %>% 
       dplyr::select(cols_to_suppress) %>% 
@@ -92,11 +91,10 @@ apply_suppression_rows <- function(
         }
       }
     }
-    
+
     #add our previous df back onto the original
     df[i, stringr::str_which(colnames(df), stringr::str_c(cols_to_suppress, collapse = "|"))] <- row_to_supp %>% as.list()
     
   }
-  
   return(df)
 }

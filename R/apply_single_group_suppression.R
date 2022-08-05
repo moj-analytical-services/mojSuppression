@@ -117,7 +117,7 @@ suppress_single_group <- function(
     print("No rows specified for suppression - all rows will be used.")
   }
   
-  if(where_to_suppress=="row" & !is.null(priority_row_suppression)) {
+  if(!any(where_to_suppress %in% "col") & !is.null(priority_row_suppression)) {
     stop("You've specified that prioritiy rows should be used for suppression, 
          but this argument can only be supplied where column suppression is
          requested.")
@@ -204,12 +204,6 @@ suppress_single_group <- function(
   
   # apply pseudo suppression to columns/rows if required
   if(!is.null(columns_to_pseudo_suppress)) { # i.e. not null
-    # this needs to go first as it doesn't take df_to_suppress as an arg
-    df_to_suppress <- custom_pseudo_supp(
-      df,
-      subset_df = df_to_suppress,
-      pseudo_col_to_supp = 'total_undeclared'
-    )
     
     df_to_suppress <- pseudo_suppress_columns(df,
                                               subset_df = df_to_suppress,
