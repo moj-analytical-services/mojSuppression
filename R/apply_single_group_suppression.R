@@ -117,7 +117,7 @@ suppress_single_group <- function(
     print("No rows specified for suppression - all rows will be used.")
   }
   
-  if(where_to_suppress=="row" & !is.null(priority_row_suppression)) {
+  if(where_to_suppress=="row" && !is.null(priority_row_suppression)) {
     stop("You've specified that prioritiy rows should be used for suppression, 
          but this argument can only be supplied where column suppression is
          requested.")

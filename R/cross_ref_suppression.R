@@ -106,7 +106,7 @@ apply_cross_reference_suppression_to_cols <- function(
       ) {
         # with this, identify row and column info for suppression
         col_to_suppress <- stringr::str_extract(names(suppression_item), "(?<=colname ~ ).*(?=;)")
-        row_to_suppress <- as.numeric(str_extract(names(suppression_item), "(?<=rowref ~ )[a-zA-Z|0-9]*"))
+        row_to_suppress <- as.numeric(stringr::str_extract(names(suppression_item), "(?<=rowref ~ )[a-zA-Z|0-9]*"))
         df[row_to_suppress, col_to_suppress] <- 9999999
         return(df)
       }
@@ -282,7 +282,7 @@ apply_cross_reference_suppression_cols <- function(supp_list,
          check your cols_to_suppress argument before continuing.")
   }
   # initially, run the code over the data
-  # print(stringr::str_glue("Length of supp_list is curretnly: {length(supp_list)}"))
+  # print(stringr::str_glue("Length of supp_list is currently: {length(supp_list)}"))
   supp_list <- apply_cross_reference_suppression_to_cols(supp_list, columns_to_supp)
   
   # calculate outstanding columns requiring suppression
@@ -572,7 +572,6 @@ apply_cross_referenced_suppression <- function(supp_df_list,
   loop_iteration <- 0
   
   while(length(supp_df_list) > 0 & length(suppressed_list)<iteration_limit) {
-    print(length(supp_df_list))
     # if(loop_iteration > 1000) {stop("Infinite loop detected. Please contact the creator of the code for assistance.")}
     # print(paste0("Looping around main loop: ", loop_iteration))
     # where appropriate, revert our 0s to 33333333
@@ -651,9 +650,6 @@ apply_cross_referenced_suppression <- function(supp_df_list,
     supp_df_list <- supp_df_list[-1]
     
     loop_iteration <- loop_iteration+1
-    print(stringr::str_glue("Loop iteration {loop_iteration}"))
-    print(stringr::str_glue("Supp_list length {length(suppressed_list)}"))
-    print(length(suppressed_list)<limit_branching)
     
   }
   
