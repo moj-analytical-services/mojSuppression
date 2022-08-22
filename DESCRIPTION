@@ -1,6 +1,6 @@
 Package: mojSuppression
 Title: Suppression Code for usage within the Ministry of Justice
-Version: 0.0.2
+Version: 0.0.1
 Authors@R: person("Thomas", "Hepworth", email = "thomas.hepworth@justice.gov.uk", role = c("aut", "cre"))
 Description: A collection of functions to allow users to suppress data programatically.
 Depends: R (>= 3.1.0)
