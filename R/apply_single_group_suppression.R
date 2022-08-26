@@ -163,9 +163,9 @@ suppress_single_group <- function(
   df_to_suppress <- df
   
   if(subset_df_along_row_and_col_arguments) {
-    if(ncol(df_to_suppress) > 1) df_to_suppress <- df_to_suppress[,cols_to_suppress] # subset cols (keep only numeric cols...)
+    if(ncol(df_to_suppress) > 1) df_to_suppress <- df_to_suppress %>% dplyr::select(cols_to_suppress) # subset cols (keep only numeric cols...)
     if(!is.null(row_nos_to_suppress)) { # subset rows only if we're working with rows
-      if(ncol(df_to_suppress) > 1) df_to_suppress <- df_to_suppress[row_nos_to_suppress,] # subset cols (keep only numeric cols...)
+      if(nrow(df_to_suppress) > 1) df_to_suppress <- df_to_suppress %>% dplyr::slice(row_nos_to_suppress) # subset cols (keep only numeric cols...)
     }
   }
   nrow_supp_df <- nrow(df_to_suppress)
